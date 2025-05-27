@@ -1,0 +1,432 @@
+<?php
+
+namespace App\Controllers;
+
+use App\Models\WilayahModel;
+use App\Models\MenuMaster;
+use App\Models\MenuPackages;
+use App\Models\MenuExtras;
+use App\Models\MenuMasterIcons;
+use App\Models\MenuMasterTags;
+use App\Models\RelatedMenuMaster;
+use App\Models\Orders;
+use App\Models\Customer;
+use App\Models\PromoBannerModel;
+use App\Models\SliderModel;
+class Home extends BaseController
+{
+    protected $menuMasterModel;
+    protected $menuPackagesModel;
+    protected $menuExtrasModel;
+    protected $menuMasterIconsModel;
+    protected $menuMasterTagsModel;
+    protected $relatedMenuMasterModel;
+    protected $ordersModel;
+    protected $customerModel;
+    protected $promoBannerModel;
+    protected $sliderModel;
+
+
+    public function __construct()
+    {
+        $this->menuMasterModel = new MenuMaster();
+        $this->menuPackagesModel = new MenuPackages();
+        $this->menuExtrasModel = new MenuExtras();
+        $this->menuMasterIconsModel = new MenuMasterIcons();
+        $this->menuMasterTagsModel = new MenuMasterTags();
+        $this->relatedMenuMasterModel = new RelatedMenuMaster();
+        $this->ordersModel = new Orders();
+        $this->customerModel = new Customer();
+        $this->sliderModel = new SliderModel();
+    }
+
+    public function index(): string
+    {
+        // get session header
+        $session = session();
+        $order_header = $session->get('order_header');
+        // get wilayah
+        $wilayahModel = new WilayahModel();
+        $provinsi = $wilayahModel->where('group', 'provinsi')->findAll();
+        $promoBannerModel = new PromoBannerModel();
+        $promoBanner = $promoBannerModel->where('is_active', 1)->findAll();
+        $sliderModel = new SliderModel();
+        $slider = $sliderModel->where('is_active', 1)->findAll();
+
+        return view('pages/home/index', [
+            'provinsi' => $provinsi,
+            'promo_banner' => $promoBanner,
+            'slider' => $slider,
+            '$order_header' => $order_header,
+        ]);
+    }
+
+    public function menu_list()
+    {
+        // get menu Packages
+        $menuPackages = $this->menuPackagesModel
+            ->join('menu_master', 'menu_packages.menu_id = menu_master.menu_id')
+            ->findAll();
+        
+        $session = session();
+        $order_header = $session->get('order_header');
+        
+
+        return view('pages/home/menu_list', [
+            'menu_list' => $menuPackages,
+        ]);
+    }
+
+    public function getDetailPackage($package_id)
+    {
+        $menuPackages = $this->menuPackagesModel
+            ->where('menu_packages.package_id', $package_id)
+            ->join('menu_master m1', 'menu_packages.menu_id = m1.menu_id')
+            ->join('menu_package_items', 'menu_packages.package_id = menu_package_items.package_id')
+            ->join('menu_items_in_group', 'menu_package_items.item_id = menu_items_in_group.item_id')
+            ->join('menu_master m2', 'menu_items_in_group.menu_id = m2.menu_id')
+            ->join('menu_group', 'menu_items_in_group.menu_group_id = menu_group.menu_group_id')
+            ->findAll();
+
+        if (!$menuPackages) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Package not found'
+            ]);
+        }
+
+        // Group by menu_group_id
+        $grouped = [];
+        foreach ($menuPackages as $row) {
+            $group_id = $row['menu_group_id'];
+            $group_name = $row['group_name'] ?? $row['menu_group_name'] ?? 'Group';
+
+            if (!isset($grouped[$group_id])) {
+                $grouped[$group_id] = [
+                    'package_id' => $package_id,
+                    'menu_group_id' => $group_id,
+                    'menu_group_name' => $group_name,
+                    'items' => []
+                ];
+            }
+
+            $grouped[$group_id]['items'][] = [
+                'item_id' => $row['item_id'],
+                'menu_id' => $row['menu_id'],
+                'menu_name' => $row['menu_name'] ?? '',
+                'menu_code' => $row['menu_code'] ?? '',
+                'price' => $row['price'] ?? 0,
+            ];
+        }
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'message' => 'Package found',
+            'data' => array_values($grouped) // reindex numerically
+        ]);
+    }
+
+
+
+
+    public function confirmation_order()
+    {
+        $session = session();
+        $orderModel = $this->ordersModel;
+        $customerModel = $this->customerModel;
+        // if post and get
+        if ($this->request->getMethod() == 'post') {
+            // Retrieve form data
+            $data = [
+                'order_no' => uniqid(), // You can generate the order number however you'd like
+                'full_name' => $this->request->getPost('full_name'),
+                'phone_no' => $this->request->getPost('phone_no'),
+                'order_date' => $this->request->getPost('order_date'),
+                'city' => $this->request->getPost('city'),
+                'address' => $this->request->getPost('address'),
+                'event_type' => $this->request->getPost('event_type'),
+                'know_from' => $this->request->getPost('know_from'),
+                'remarks' => $this->request->getPost('remarks'),
+                'order_status' => 'pending', // Set initial status to 'pending'
+                'order_total' => 0, // Set the order total based on the cart or other data
+            ];
+
+            // insert customer data check if phone_no is exist if not exist insert if not not insert
+            $checkPhoneCustomer = $customerModel->find(['phone_no' => $data['phone_no']]);
+            if (!$checkPhoneCustomer) {
+                $customerModel->insert(
+                    [
+                        'full_name' => $data['full_name'],
+                        'phone_no'  => $data['phone_no'],
+                    ]
+                );
+            }
+
+            // Insert order data into the database
+            if ($orderModel->insert($data)) {
+                // Redirect or respond as needed
+                
+                $order_no = $data['order_no'];
+                $session->set('order_no', $order_no);
+                return redirect()->to('/complete_order'); // Redirect to a success page
+            } else {
+                // Handle the error, show message, or log it
+                return redirect()->back()->with('error', 'There was an error submitting the order.');
+            }
+        }
+
+        return view('pages/home/confirmation_order');
+    }
+
+
+
+    public function getKota($id_provinsi)
+    {
+        $wilayahModel = new WilayahModel();
+        $kota = $wilayahModel->where('group', 'kota')->where('parent_id', $id_provinsi)->findAll();
+        return json_encode($kota);
+    }
+
+
+    public function getMenu($menuCode)
+    {
+        // Ambil data menu berdasarkan menu code
+        $menu = $this->menuMasterModel->where('menu_code', $menuCode)->first();
+
+        if (!$menu) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Menu not found'
+            ]);
+        }
+
+        // Ambil data yang berhubungan dengan menu tersebut
+        $menuPackages = $this->menuPackagesModel->where('menu_id', $menu['menu_id'])->findAll();
+        $menuExtras = $this->menuExtrasModel->where('menu_id', $menu['menu_id'])->findAll();
+        $menuIcons = $this->menuMasterIconsModel->where('menu_id', $menu['menu_id'])->findAll();
+        $menuTags = $this->menuMasterTagsModel->where('menu_id', $menu['menu_id'])->findAll();
+        $relatedMenus = $this->relatedMenuMasterModel->where('menu_id', $menu['menu_id'])->findAll();
+
+        // Format data untuk response API
+        $response = [
+            'path' => current_url(),
+            'timestamp' => date('Y-m-d H:i:s'),
+            'code' => 'EC011200',
+            'status' => 'ok',
+            'result' => [
+                'page' => 1,
+                'limit' => 20,
+                'count' => 1,
+                'data' => [
+                    [
+                        'menuID' => $menu['menu_id'],
+                        // 'categoryDetail' => $menu['menu_category'],
+                        'bomID' => 0,
+                        'bomName' => '',
+                        'menuCode' => $menu['menu_code'],
+                        'menuName' => $menu['menu_name'],
+                        'menuShortName' => $menu['menu_short_name'],
+                        'alternativeMenuName' => $menu['menu_name'],
+                        'flagTax' => $menu['flag_tax'] ? 'Yes, Tax' : 'No',
+                        'flagOtherTax' => $menu['flag_other_tax'] ? 'Yes' : 'No',
+                        'zeroValueText' => '0',
+                        'salesAccount' => 'Sales - Food',
+                        'cogsAccount' => 'COGS - Food',
+                        'discountAccount' => 'Food Discount',
+                        'description' => $menu['description'],
+                        'menuImage' => $menu['image_url'] ?? 'Upload Image',
+                        'flagOpenPrice' => $menu['flag_open_price'] ? 'Yes' : 'No',
+                        'printZeroValue' => $menu['print_zero_value'] ? 'Yes' : 'No',
+                        'themeMenuOnPos' => $menu['theme_menu_on_pos'] ?? '',
+                        'notes' => $menu['notes'] ?? '',
+                        // 'menuTemplates' => [
+                        //     [
+                        //         'menuTemplateID' => 1,
+                        //         'menuTemplateName' => 'SA INCLUSIVE',
+                        //         'price' => $menu['price']
+                        //     ]
+                        // ],
+                        'menuPackages' => $menuPackages,
+                        'menuExtras' => $menuExtras,
+                        'menuIcons' => $menuIcons,
+                        'menuTags' => $menuTags,
+                        'relatedMenus' => $relatedMenus
+                    ]
+                ]
+            ],
+            'next' => null,
+            'prev' => null
+        ];
+
+        return $this->response->setJSON($response);
+    }
+
+    public function addToCart()
+    {
+        $session = session();
+        $cart = $session->get('cart');
+        if (!$cart) {
+            $cart = [];
+        }
+        $package_id = $this->request->getPost('package_id');
+        $qty = $this->request->getPost('qty');
+
+        $menuPackages = $this->menuPackagesModel
+            ->where('package_id', $package_id)
+            ->join('menu_master', 'menu_packages.menu_id = menu_master.menu_id')
+            ->first();
+
+        $cart[] = [
+            'package_id' => $package_id,
+            'qty' => $qty,
+            'price' => $menuPackages['price'],
+            'menu_id' => $menuPackages['menu_id'],
+            'menu_name' => $menuPackages['menu_name'],
+        ];
+
+
+
+        $session->set('cart', $cart);
+        return $this->response->setJSON([
+            'status' => 'success',
+            'message' => 'Item added to cart',
+            'count' => count($cart),
+            'total' => array_sum(array_column($cart, 'price')),
+        ]);
+    }
+
+    public function getCart()
+    {
+        $session = session();
+        $cart = $session->get('cart');
+
+        if (!$cart || !is_array($cart)) {
+            $cart = [];
+        }
+
+        if (empty($cart)) {
+            return view('pages/home/cart', [
+                'cart' => $cart,
+                'packages' => []
+            ]);
+        }
+
+        $packageIds = array_column($cart, 'package_id');
+
+        // Fetch detailed package info
+        $menuPackages = $this->menuPackagesModel
+            ->whereIn('menu_packages.package_id', $packageIds)
+            ->join('menu_master m1', 'menu_packages.menu_id = m1.menu_id')
+            ->join('menu_package_items', 'menu_packages.package_id = menu_package_items.package_id')
+            ->join('menu_items_in_group', 'menu_package_items.item_id = menu_items_in_group.item_id')
+            ->join('menu_master m2', 'menu_items_in_group.menu_id = m2.menu_id')
+            ->join('menu_group', 'menu_items_in_group.menu_group_id = menu_group.menu_group_id')
+            ->findAll();
+
+        // Group and format
+        $groupedPackages = [];
+        foreach ($menuPackages as $item) {
+            $packageId = $item['package_id'];
+
+            if (!isset($groupedPackages[$packageId])) {
+                $groupedPackages[$packageId] = [
+                    'package_name' => $item['package_name'],
+                    'price' => $item['price'],
+                    'main_menu' => $item['menu_name'], // still picking first menu as "main"
+                    'image' => '', // will assign below if Main Course
+                    'items' => [],
+                ];
+            }
+
+            // Only set the image if it's a Main Course and not already set
+            if ($item['menu_group_name'] === 'Main Course' && empty($groupedPackages[$packageId]['image'])) {
+                $groupedPackages[$packageId]['image'] = $item['menu_image'];
+            }
+
+            // Collect all menu items (even duplicates if needed)
+            $groupedPackages[$packageId]['items'][] = $item['menu_name'];
+        }
+
+        
+
+        $packageQtyMap = [];
+        foreach ($cart as $cartItem) {
+            $pid = $cartItem['package_id'];
+            if (!isset($packageQtyMap[$pid])) {
+                $packageQtyMap[$pid] = 0;
+            }
+            $packageQtyMap[$pid] += (int)$cartItem['qty'];
+        }
+
+
+        $finalPackages = [];
+        foreach ($groupedPackages as $packageId => $pkg) {
+            $itemsList = array_filter($pkg['items'], fn($name) => $name !== $pkg['main_menu']);
+            $finalPackages[] = [
+                'title' => $pkg['main_menu'],
+                'price' => 'Rp.' . $pkg['price'] . '/Pax',
+                'image' => $pkg['image'],
+                'items' => implode(', ', $itemsList),
+                'qty' => $packageQtyMap[$packageId] ?? 0,
+                'total_price' => $pkg['price'] * (int)$packageQtyMap[$packageId],
+            ];
+        }
+
+        // Send to view
+        return view('pages/home/cart', [
+            'cart' => $cart,
+            'packages' => $finalPackages,
+        ]);
+    }
+
+    public function completeOrder()
+    {
+        $session = session();
+        $orderModel = $this->ordersModel;
+        $cart = $session->get('cart');
+        if (!$cart) {
+            $cart = [];
+        }
+
+        $order_no = $session->get('order_no');
+        // Clear cart
+        $session->remove('cart');
+
+        return view('pages/home/complete_order', [
+            'order_no' => $order_no,
+            // 'order_date' => $order_date,
+            // 'order_total' => $order_total,
+            // 'order_items' => $order_items,
+        ]);
+    }
+
+    public function saveOrderHeader()
+    {
+        $session = session();
+
+        // Assume header data is sent via POST request
+        $provinsi = $this->request->getPost('provinsi');
+        $kota     = $this->request->getPost('kota');
+        $tanggal  = $this->request->getPost('tanggal');
+        $jam      = $this->request->getPost('jam');
+        $no_telp  = $this->request->getPost('no_telp');
+
+        // Store order header in session
+        $orderHeader = [
+            'provinsi' => $provinsi,
+            'kota'     => $kota,
+            'tanggal'  => $tanggal,
+            'jam'      => $jam,
+            'no_telp'  => $no_telp
+        ];
+
+        $session->set('order_header', $orderHeader);
+
+        // Optional: return response for debugging / confirmation
+        return $this->response->setJSON([
+            'status' => 'success',
+            'message' => 'Order header saved to session',
+            'data' => $orderHeader
+        ]);
+    }
+}

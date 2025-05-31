@@ -8,6 +8,7 @@ use App\Models\ItemModel;
 use App\Models\UnitModel;
 use App\Models\MenuModel;
 use App\Models\MenuItemsModel;
+use App\Models\WilayahModel;
 
 
 class ReportStockController extends BaseController
@@ -16,12 +17,14 @@ class ReportStockController extends BaseController
     protected $unitModel;
     protected $menuModel;
     protected $menuItemsModel;
+    protected $wilayahModel;
     public function __construct()
     {
         $this->itemModel = new ItemModel();
         $this->unitModel = new UnitModel();
         $this->menuModel = new MenuModel();
         $this->menuItemsModel = new MenuItemsModel();
+        $this->wilayahModel = new WilayahModel();
     }
     public function index()
     {
@@ -29,6 +32,9 @@ class ReportStockController extends BaseController
         $units = $this->unitModel->findAll();
         $data['units'] = $units;
 
+        // wilayah model
+        $wilayah = $this->wilayahModel->withParent()->findAll();
+        $data['wilayah'] = $wilayah;
 
         $header['title'] = 'Report Stock';
         echo view('partials/header', $header);

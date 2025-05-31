@@ -8,6 +8,7 @@ use App\Models\MenuMaster;
 use App\Models\MenupackageItems;
 use App\Models\MenuItemsInGroup;
 use App\Models\MenuItemsModel;
+use App\Models\MenuGroup;
 
 class MenuPackagesController extends BaseController
 {
@@ -16,6 +17,7 @@ class MenuPackagesController extends BaseController
     protected $MenuPackageItems;
     protected $MenuItemsInGroup;
     protected $MenuItemsModel;
+    protected $menuGroupModel;
 
     public function __construct()
     {
@@ -24,21 +26,29 @@ class MenuPackagesController extends BaseController
         $this->MenuPackageItems = new MenupackageItems(); // Menggunakan model MenuPackageItems
         $this->MenuItemsInGroup = new MenuItemsInGroup(); // Menggunakan model MenuItemsInGroup
         $this->MenuItemsModel = new MenuItemsModel(); // Menggunakan model MenuItemsModel
+        $this->menuGroupModel = new MenuGroup(); // Menggunakan model MenuGroup
     }
 
     public function index()
     {
         $header['title'] = 'Menu Packages';  // Judul halaman
 
-        // Ambil semua data menu
-        $data['menus'] = $this->menuMasterModel->findAll();
+        // ambil data group menu Main Course dan join dengan menu_items_in_group join dengan menu_master
+        $data['main_course'] = $this->menuGroupModel->where('menu_group_name', 'Main Course')
+            ->join('menu_items_in_group', 'menu_group.menu_group_id = menu_items_in_group.menu_group_id')
+            ->join('menu_master', 'menu_items_in_group.menu_id = menu_master.menu_id')
+            ->findAll();
+
+
+        // Ambil semua data menu yang bukan Main Course
+        $data['menus'] = $this->menuGroupModel
+            ->where('menu_group_name !=', 'Main Course') // atau bisa juga: ->where('menu_group_name <>', 'Main Course')
+            ->join('menu_items_in_group', 'menu_group.menu_group_id = menu_items_in_group.menu_group_id')
+            ->join('menu_master', 'menu_items_in_group.menu_id = menu_master.menu_id')
+            ->findAll();
 
         // Ambil semua menu package
         $data['menu_packages'] = $this->menuPackagesModel->findAll();
-
-        // Ambil semua item dengan grup dan menu terkait
-        $data['menu_items_in_group'] = $this->MenuItemsInGroup->getItemsWithGroup();
-        // dd($data['menu_items_in_group']);
         echo view('partials/header', $header);
         echo view('partials/top_menu');
         echo view('partials/side_menu');
@@ -166,12 +176,22 @@ class MenuPackagesController extends BaseController
 
     public function readById($id)
     {
-        $package = $this->menuPackagesModel->find($id); // Ambil data berdasarkan ID menu package
+        $package = $this->menuPackagesModel->find($id); // Ambil data menu package berdasarkan ID
 
+        // relasi ke menu_package_items by package_id and join with menu_master
+        $package_details = $this->MenuPackageItems
+            ->where('menu_package_items.package_id', $id)
+            ->join('menu_items_in_group', 'menu_items_in_group.item_id = menu_package_items.item_id')
+            ->join('menu_master', 'menu_master.menu_id = menu_items_in_group.menu_id')
+            ->findAll();
+        // Ambil data berdasarkan ID menu package
         if ($package) {
             return $this->response->setJSON([
                 'success' => true,
-                'data' => $package
+                'data' => [
+                    'package' => $package,
+                    'items' => $package_details
+                ],
             ]);
         } else {
             return $this->response->setJSON([

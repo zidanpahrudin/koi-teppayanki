@@ -27,7 +27,18 @@
                         <?php endforeach; ?>
                     </select>
                 </div>
+                <div class="col-md-4">
+                    <label for="filterWilayah">Filter by Wilayah</label>
+                    <select id="filterWilayah" class="form-control">
+                        <option value="">-- All Wilayah --</option>
+                        <?php foreach ($wilayah as $w) : ?>
+                            <option value="<?= $w['id'] ?>"><?= $w['name'] ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
             </div>
+
 
             <!-- DATA TABLE -->
             <div class="row">
@@ -41,13 +52,19 @@
                                 <thead>
                                     <tr>
                                         <th>No</th>
+                                        <th>Wilayah</th>
                                         <th>Item Code</th>
                                         <th>Item Name</th>
                                         <th>Unit</th>
-                                        <th>Created At</th>
-                                        <th>Updated At</th>
+                                        <th>total</th>
                                     </tr>
                                 </thead>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="5" style="text-align:right">Total:</th>
+                                        <th id="totalQty">0</th>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                     </div>

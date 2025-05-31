@@ -89,13 +89,6 @@ class MenuItemsInGroupController extends BaseController
                     'is_natural_no_zero' => 'Menu ID must be a positive integer',
                 ]
             ],
-            'additional_price' => [
-                'rules' => 'required|decimal',
-                'errors' => [
-                    'required' => 'Additional price is required',
-                    'decimal' => 'Additional price must be a decimal number',
-                ]
-            ]
         ])) {
             return $this->response->setJSON([
                 'success' => false,
@@ -107,8 +100,8 @@ class MenuItemsInGroupController extends BaseController
         $this->menuItemsInGroupModel->save([
             'menu_group_id' => $this->request->getPost('menu_group_id'),
             'menu_id' => $this->request->getPost('menu_id'),
-            'additional_price' => $this->request->getPost('additional_price'),
-            'default_item' => $this->request->getPost('default_item') ? true : false,
+            'additional_price' => 0,
+            'default_item' => false,
         ]);
 
         return $this->response->setJSON([
@@ -154,13 +147,7 @@ class MenuItemsInGroupController extends BaseController
                     'is_natural_no_zero' => 'Menu ID must be a positive integer',
                 ]
             ],
-            'additional_price' => [
-                'rules' => 'required|decimal',
-                'errors' => [
-                    'required' => 'Additional price is required',
-                    'decimal' => 'Additional price must be a decimal number',
-                ]
-            ]
+            
         ])) {
             return $this->response->setJSON([
                 'success' => false,
@@ -172,8 +159,8 @@ class MenuItemsInGroupController extends BaseController
         $this->menuItemsInGroupModel->update($id, [
             'menu_group_id' => $this->request->getPost('menu_group_id'),
             'menu_id' => $this->request->getPost('menu_id'),
-            'additional_price' => $this->request->getPost('additional_price'),
-            'default_item' => $this->request->getPost('default_item') ? true : false,
+            'additional_price' => 0,
+            'default_item' => false,
         ]);
 
         return $this->response->setJSON([

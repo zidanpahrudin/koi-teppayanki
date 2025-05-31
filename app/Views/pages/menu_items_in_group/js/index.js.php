@@ -31,9 +31,6 @@
                     "data": "menu_name"
                 },
                 {
-                    "data": "additional_price"
-                },
-                {
                     "data": null,
                     "render": function(data, type, row) {
                         return `<button class="btn btn-sm btn-primary" onclick="editMenuItemInGroup('${row.item_id}')">Edit</button> 
@@ -111,8 +108,6 @@
                     $('#id').val(response.data.item_id);
                     $('#menu_group_id').val(response.data.menu_group_id);
                     $('#menu_id').val(response.data.menu_id);
-                    $('#additional_price').val(response.data.additional_price);
-                    $('#default_item').prop('checked', response.data.default_item);
                 } else {
                     Swal.fire({
                         icon: 'error',

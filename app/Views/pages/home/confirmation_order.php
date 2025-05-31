@@ -139,6 +139,20 @@
             font-optical-sizing: auto;
             font-style: normal;
         }
+
+        .custom-select-no-arrow:hover,
+        .custom-select-no-arrow:focus {
+            background-color: #FF0000 !important;
+            color: white !important;
+            border-color: #FF0000 !important;
+            box-shadow: 0 0 0 0.2rem rgba(255, 0, 0, 0.25);
+        }
+
+        .custom-select-no-arrow:valid {
+            background-color: #FF0000 !important;
+            color: white !important;
+            border-color: #FF0000 !important;
+        }
     </style>
 
 </head>
@@ -255,21 +269,27 @@
                     </div>
 
                     <!-- Event Type -->
-                    <div class="form-group">
+                     <div class="form-group">
                         <label for="event_type">Jenis Acara <span class="text-danger">*</span></label>
-                        <select class="form-control bg-light text-dark custom-select-no-arrow rounded-10" name="event_type" id="event_type" style="height: 48px; padding-left: 1rem; padding-right: 2.5rem;">
-                            <option selected disabled>Pilih Jenis Acara</option>
-                            <option value="ulang_tahun">Ulang Tahun</option>
-                            <option value="arisan">Arisan</option>
-                            <option value="syukuran">Syukuran</option>
-                            <option value="acara_keluarga">Acara Keluarga</option>
-                            <option value="acara_kantor">Acara Kantor</option>
-                            <option value="acara_komunitas">Acara Komunitas</option>
-                            <option value="pernikahan">Pernikahan / Tunangan</option>
-                            <option value="lainnya">Lainnya</option>
-                        </select>
-                    </div>
+                         <select class="form-control bg-light text-dark custom-select-no-arrow rounded-10"
+                             name="event_type" id="event_type"
+                             style="height: 48px; padding-left: 1rem; padding-right: 2.5rem;">
+                             <option selected disabled>Pilih Jenis Acara</option>
+                             <option value="ulang_tahun">Ulang Tahun</option>
+                             <option value="arisan">Arisan</option>
+                             <option value="syukuran">Syukuran</option>
+                             <option value="acara_keluarga">Acara Keluarga</option>
+                             <option value="acara_kantor">Acara Kantor</option>
+                             <option value="acara_komunitas">Acara Komunitas</option>
+                             <option value="pernikahan">Pernikahan / Tunangan</option>
+                             <option value="lainnya">Lainnya</option>
+                         </select>
+                        
+                     </div>
 
+
+
+                    
                     <!-- Know From -->
                     <div class="form-group">
                         <label for="know_from">Mengetahui KOI Teppanyaki Dari</label>
@@ -294,29 +314,34 @@
                     </div>
 
                     <!-- Note Section -->
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h2 class="mr-3 text-primary font-weight-bold">NOTE</h2>
-                        <p>20 - 60 PAX (Waktu Service di 3 Jam) 61 - 100+ PAX (Waktu Service di 4 Jam) TO BOX Rp.2000/Box (Harap Kabari Jika Perlu)</p>
+                    <div class="container">
+                        <div class="row align-items-center">
+                            <div class="align-self-start col-4 col-md-auto mr-md-2 p-0">
+                                <h2 class="text-primary font-weight-bold m-0">NOTE</h2>
+                            </div>
+                            <div class="col-8 col-md p-0">
+                                <p class="text-gray text-sm m-0">
+                                    20 - 60 PAX (Waktu Service di 3 Jam) 61 - 100+ PAX (Waktu Service di 4 Jam) <br /> TO BOX Rp.2000/Box (Harap Kabari Jika Perlu)
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Disclaimer -->
-                    <p class="text-center"> <span class="text-primary font-weight-bold text-md">DISCLAIMER : </span>Form ini bukan konfirmasi pemesanan. Pembayaran dan konfirmasi akan dilakukan melalui Whatsapp. </p>
 
-                    <!-- Submit Button -->
-                    <div class="d-flex justify-content-between align-items-center">
-                        <p class="mr-3">Tombol ‘Submit’ Tidak Aktif? Harap Lengkapi Data Yang Bertanda</p>
-                        <button type="submit" class="btn w-100 bg-gray box-red-shadow shadow rounded-8 mt-2 py-2">Submit</button>
-                    </div>
 
+
+                </div>
+                <!-- Disclaimer -->
+                <p class="text-center text-gray my-4"> <span class="text-primary font-weight-bold text-md">DISCLAIMER : </span>Form ini bukan konfirmasi pemesanan. Pembayaran dan konfirmasi akan dilakukan melalui Whatsapp. </p>
+
+                <!-- Submit Button -->
+                <div class="d-flex justify-content-center justify-content-md-start align-items-center md-border p-3 rounded-10">
+                    <p class="mr-5 font-italic">Tombol ‘Submit’ Tidak Aktif? <br /> Harap Lengkapi Data Yang Bertanda</p>
+                    <button style="max-width: 500px;" type="submit" class="font-weight-bold text-lg submit-custom btn w-100 box-red-shadow shadow rounded-8 mt-2 py-2">Submit</button>
                 </div>
             </form>
 
         </section>
-
-
-
-
-
 
     </main>
 

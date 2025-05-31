@@ -247,7 +247,6 @@
 
 
 
-            <img src="<?php echo base_url('') ?>" alt="">
             <div class="card w-100 mx-md-9">
                 <form class="p-3" id="orderForm">
 
@@ -427,31 +426,28 @@
 
 
             <!-- banner promos -->
-
             <?php if (!empty($promo_banner)): ?>
                 <?php
-                $bannerDisplayed = false;
-                foreach ($promo_banner as $pb):
-                    if ($pb['orientation'] === 'landscape' && $pb['display_position'] === 'home-bottom'):
-                        $bannerDisplayed = true;
+                $matching_bottom_banners = array_filter($promo_banner, function ($pb) {
+                    return $pb['orientation'] === 'landscape' && $pb['display_position'] === 'home-bottom';
+                });
                 ?>
 
-                        <div class="row mt-4 d-md-none">
-                            <div class="col-md-4">
-                                <div class="card">
-                                    <img class="img-fluid rounded-8 d-none d-md-block"
-                                        style="max-width: 200px;" src="<?php echo base_url($pb['image_url']) ?>" alt="Promo">
-                                </div>
+                <?php if (!empty($matching_bottom_banners)): ?>
+                    <div class="row mt-4 d-md-none">
+                        <div class="col-12">
+                            <div class="promo-slider-bottom">
+                                <?php foreach ($matching_bottom_banners as $pb): ?>
+                                    <div>
+                                        <img class="img-fluid rounded-8"
+                                            src="<?php echo base_url($pb['image_url']); ?>"
+                                            alt="Promo Banner">
+                                    </div>
+                                <?php endforeach; ?>
                             </div>
                         </div>
-
-                <?php
-                        break; // stop after displaying one matching banner
-                    endif;
-                endforeach;
-                ?>
-
-                <?php if (!$bannerDisplayed): ?>
+                    </div>
+                <?php else: ?>
                     <div class="row mt-4 d-md-none">
                         <div class="col-md-4">
                             <div class="card">
@@ -462,7 +458,6 @@
                         </div>
                     </div>
                 <?php endif; ?>
-
             <?php else: ?>
                 <div class="row mt-4 d-md-none">
                     <div class="col-md-4">
@@ -535,18 +530,31 @@
             }
         }
 
+        // Untuk handle resize secara efisien
+        let resizeTimer;
 
+        function reinitAllSliders() {
+            initSlider('.promo-slider');
+            initSlider('.promo-slider-left');
+            initSlider('.promo-slider-bottom');
+        }
 
         $(document).ready(function() {
-            initSlider('.promo-slider');
-            initSlider('.promo-slider-left');
+            reinitAllSliders();
         });
 
-        // Jika pakai AJAX atau Livewire
         $(document).on('ajaxComplete', function() {
-            initSlider('.promo-slider');
-            initSlider('.promo-slider-left');
+            reinitAllSliders();
         });
+
+        // Tambahkan ini untuk handle screen resize
+        $(window).on('resize orientationchange', function() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function() {
+                reinitAllSliders();
+            }, 300); // delay untuk menghindari trigger berulang-ulang
+        });
+
 
         $(document).ready(function() {
 

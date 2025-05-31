@@ -29,6 +29,7 @@
                                     <tr>
                                         <th>No</th>
                                         <th>Package Name</th>
+                                        <th>Price</th>
                                         <th>Min Qty</th>
                                         <th>Max Qty</th>
                                         <th>Notes</th>

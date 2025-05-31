@@ -366,32 +366,26 @@
                     type: 'GET',
                     dataType: 'json',
                     success: function(data) {
-                        console.log(JSON.stringify(data));
-                        if (data.status === 'success') {
+                        console.log(data);
+                        if (data.success) {
                             let htmlForm = '';
 
-                            // Pisahkan group main course dan selainnya
-                            const mainCourseGroup = data.data.find(group => group.menu_group_name === 'Main Course');
-                            const otherGroups = data.data.filter(group => group.menu_group_name !== 'Main Course');
-
-                            // Tampilkan dulu Main Course jika ada
-                            if (mainCourseGroup) {
+                            if(data.data.package) {
                                 htmlForm += `<div class="form-group">`;
-                                htmlForm += `<label><strong>${mainCourseGroup.menu_group_name}</strong></label>`;
-                                htmlForm += `<input type="hidden" name="package_id" value="${mainCourseGroup.package_id}">`;
+                                htmlForm += `<label><strong>Side Dish</strong></label>`;
+                                htmlForm += `<input type="hidden" name="package_id" value="${data.data.package.package_id}">`;
 
-                                const item = mainCourseGroup.items[0];
                                 htmlForm += `
-                                    <input type="hidden" name="main_course_id" value="${item.menu_id}">
+                                    <input type="hidden" name="main_course_id" value="${data.data.package.menu_id}">
                                     <div class="form-control d-flex justify-content-between align-items-center" style="background-color:#f1f1f1;">
-                                        <span>${item.menu_name}</span>
+                                        <span>${data.data.package.package_name}</span>
                                     </div>
                                 `;
                                 htmlForm += `</div>`;
                             }
 
                             // Tampilkan grup lainnya
-                            otherGroups.forEach(group => {
+                            data.data.items.forEach(group => {
                                 htmlForm += `<div class="form-group">`;
                                 htmlForm += `<label><strong>${group.menu_group_name}</strong></label>`;
                                 htmlForm += `<input type="hidden" name="package_id" value="${group.package_id}">`;

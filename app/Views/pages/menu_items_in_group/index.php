@@ -30,7 +30,6 @@
                                         <th>No</th>
                                         <th>Menu Group</th>
                                         <th>Menu Item</th>
-                                        <th>Additional Price</th>
                                         <th>Action</th>
                                     </tr>
                                 </thead>

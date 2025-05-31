@@ -2,17 +2,40 @@
     // Fungsi untuk mengedit menu package
     function editMenuPackage(id) {
         $.ajax({
-            url: "<?= base_url('master/menu_packages/read/') ?>" + id, // Menambahkan master/ sebelum path API
+            url: "<?= base_url('master/menu_packages/read/') ?>" + id,
             type: "GET",
             dataType: "json",
             success: function(response) {
                 if (response.success) {
-                    $('#modal-default').modal('show'); // Tampilkan modal
-                    $('#modal-title').html('Edit Menu Package'); // Set judul modal
-                    $('#menuPackageForm').attr('action', "<?= base_url('master/menu_packages/update/') ?>" + id); // Mengatur aksi form untuk update
-                    $('#id').val(response.data.package_id);
-                    $('#package_name').val(response.data.package_name);
-                    $('#price').val(response.data.price);
+                    const data = response.data;
+                    const pkg = data.package;
+                    const items = data.items;
+
+                    // Tampilkan modal dan set judul
+                    $('#modal-default').modal('show');
+                    $('#modal-title').html('Edit Menu Package');
+                    $('#menuPackageForm').attr('action', "<?= base_url('master/menu_packages/update/') ?>" + id);
+
+                    // Isi data package ke form
+                    $('#id').val(pkg.package_id);
+                    $('#menu_id').val(pkg.menu_id);
+                    $('#package_name').val(pkg.package_name);
+                    $('#min_qty').val(pkg.min_qty);
+                    $('#max_qty').val(pkg.max_qty);
+                    $('#price').val(pkg.price);
+                    $('#notes').val(pkg.notes);
+
+                    // Centang checkbox jika nilainya 1
+                    $('#flag_separate_print_package').prop('checked', pkg.flag_separate_print_package === "1");
+                    $('#flag_separate_tax_calculation').prop('checked', pkg.flag_separate_tax_calculation === "1");
+
+                    // Isi item_ids multiselect
+                    const selectedItemIds = items.map(item => item.item_id);
+                    $('#item_ids').val(selectedItemIds).trigger('change'); // untuk plugin select2 jika dipakai
+
+                    // Opsional: preview gambar jika ingin tampilkan
+                    // $('#menu_image_preview').attr('src', pkg.menu_image); // Tambahkan <img id="menu_image_preview"> di HTML jika perlu
+
                 } else {
                     Swal.fire({
                         icon: 'error',
@@ -23,6 +46,7 @@
             }
         });
     }
+
 
     // Fungsi untuk menghapus menu package
     function deleteMenuPackage(id) {
@@ -101,6 +125,9 @@
                 },
                 {
                     "data": "package_name"
+                },
+                {
+                    "data": "price"
                 },
                 {
                     "data": "min_qty"

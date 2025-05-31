@@ -13,6 +13,7 @@ use App\Models\Orders;
 use App\Models\Customer;
 use App\Models\PromoBannerModel;
 use App\Models\SliderModel;
+use App\Models\MenupackageItems;
 class Home extends BaseController
 {
     protected $menuMasterModel;
@@ -25,6 +26,7 @@ class Home extends BaseController
     protected $customerModel;
     protected $promoBannerModel;
     protected $sliderModel;
+    protected $MenuPackageItems;
 
 
     public function __construct()
@@ -38,6 +40,8 @@ class Home extends BaseController
         $this->ordersModel = new Orders();
         $this->customerModel = new Customer();
         $this->sliderModel = new SliderModel();
+        $this->promoBannerModel = new PromoBannerModel();
+        $this->MenuPackageItems = new MenupackageItems();
     }
 
     public function index(): string
@@ -63,14 +67,12 @@ class Home extends BaseController
 
     public function menu_list()
     {
-        // get menu Packages
+        $session = session();
+        $cart = $session->get('cart');
+        // dd($cart);
         $menuPackages = $this->menuPackagesModel
             ->join('menu_master', 'menu_packages.menu_id = menu_master.menu_id')
             ->findAll();
-        
-        $session = session();
-        $order_header = $session->get('order_header');
-        
 
         return view('pages/home/menu_list', [
             'menu_list' => $menuPackages,
@@ -79,51 +81,51 @@ class Home extends BaseController
 
     public function getDetailPackage($package_id)
     {
-        $menuPackages = $this->menuPackagesModel
-            ->where('menu_packages.package_id', $package_id)
-            ->join('menu_master m1', 'menu_packages.menu_id = m1.menu_id')
-            ->join('menu_package_items', 'menu_packages.package_id = menu_package_items.package_id')
-            ->join('menu_items_in_group', 'menu_package_items.item_id = menu_items_in_group.item_id')
-            ->join('menu_master m2', 'menu_items_in_group.menu_id = m2.menu_id')
+        $package = $this->menuPackagesModel->find($package_id); // Ambil data menu package berdasarkan ID
+
+        // relasi ke menu_package_items by package_id and join with menu_master
+        // join with menu_group_id
+        $package_details = $this->MenuPackageItems
+            ->where('menu_package_items.package_id', $package_id)
+            ->join('menu_items_in_group', 'menu_items_in_group.item_id = menu_package_items.item_id')
             ->join('menu_group', 'menu_items_in_group.menu_group_id = menu_group.menu_group_id')
+            ->join('menu_master', 'menu_master.menu_id = menu_items_in_group.menu_id')
             ->findAll();
 
-        if (!$menuPackages) {
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => 'Package not found'
-            ]);
-        }
 
-        // Group by menu_group_id
         $grouped = [];
-        foreach ($menuPackages as $row) {
-            $group_id = $row['menu_group_id'];
-            $group_name = $row['group_name'] ?? $row['menu_group_name'] ?? 'Group';
+
+        foreach ($package_details as $item) {
+            $group_id = $item['menu_group_id'];
 
             if (!isset($grouped[$group_id])) {
                 $grouped[$group_id] = [
-                    'package_id' => $package_id,
-                    'menu_group_id' => $group_id,
-                    'menu_group_name' => $group_name,
+                    'menu_group_name' => $item['menu_group_name'],
+                    'package_id' => $item['package_id'],
                     'items' => []
                 ];
             }
 
-            $grouped[$group_id]['items'][] = [
-                'item_id' => $row['item_id'],
-                'menu_id' => $row['menu_id'],
-                'menu_name' => $row['menu_name'] ?? '',
-                'menu_code' => $row['menu_code'] ?? '',
-                'price' => $row['price'] ?? 0,
-            ];
+            $grouped[$group_id]['items'][] = $item;
         }
 
-        return $this->response->setJSON([
-            'status' => 'success',
-            'message' => 'Package found',
-            'data' => array_values($grouped) // reindex numerically
-        ]);
+        $grouped_items = array_values($grouped);
+       
+            // Ambil data berdasarkan ID menu package
+        if ($package) {
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => [
+                    'package' => $package,
+                    'items' => $grouped_items
+                ],
+            ]);
+        } else {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Menu package tidak ditemukan'
+            ]);
+        }
     }
 
 
@@ -273,15 +275,16 @@ class Home extends BaseController
 
         $menuPackages = $this->menuPackagesModel
             ->where('package_id', $package_id)
-            ->join('menu_master', 'menu_packages.menu_id = menu_master.menu_id')
             ->first();
+
+        
 
         $cart[] = [
             'package_id' => $package_id,
             'qty' => $qty,
             'price' => $menuPackages['price'],
             'menu_id' => $menuPackages['menu_id'],
-            'menu_name' => $menuPackages['menu_name'],
+            'menu_name' => $menuPackages['package_name'],
         ];
 
 
@@ -311,71 +314,11 @@ class Home extends BaseController
             ]);
         }
 
-        $packageIds = array_column($cart, 'package_id');
-
-        // Fetch detailed package info
-        $menuPackages = $this->menuPackagesModel
-            ->whereIn('menu_packages.package_id', $packageIds)
-            ->join('menu_master m1', 'menu_packages.menu_id = m1.menu_id')
-            ->join('menu_package_items', 'menu_packages.package_id = menu_package_items.package_id')
-            ->join('menu_items_in_group', 'menu_package_items.item_id = menu_items_in_group.item_id')
-            ->join('menu_master m2', 'menu_items_in_group.menu_id = m2.menu_id')
-            ->join('menu_group', 'menu_items_in_group.menu_group_id = menu_group.menu_group_id')
-            ->findAll();
-
-        // Group and format
-        $groupedPackages = [];
-        foreach ($menuPackages as $item) {
-            $packageId = $item['package_id'];
-
-            if (!isset($groupedPackages[$packageId])) {
-                $groupedPackages[$packageId] = [
-                    'package_name' => $item['package_name'],
-                    'price' => $item['price'],
-                    'main_menu' => $item['menu_name'], // still picking first menu as "main"
-                    'image' => '', // will assign below if Main Course
-                    'items' => [],
-                ];
-            }
-
-            // Only set the image if it's a Main Course and not already set
-            if ($item['menu_group_name'] === 'Main Course' && empty($groupedPackages[$packageId]['image'])) {
-                $groupedPackages[$packageId]['image'] = $item['menu_image'];
-            }
-
-            // Collect all menu items (even duplicates if needed)
-            $groupedPackages[$packageId]['items'][] = $item['menu_name'];
-        }
-
         
-
-        $packageQtyMap = [];
-        foreach ($cart as $cartItem) {
-            $pid = $cartItem['package_id'];
-            if (!isset($packageQtyMap[$pid])) {
-                $packageQtyMap[$pid] = 0;
-            }
-            $packageQtyMap[$pid] += (int)$cartItem['qty'];
-        }
-
-
-        $finalPackages = [];
-        foreach ($groupedPackages as $packageId => $pkg) {
-            $itemsList = array_filter($pkg['items'], fn($name) => $name !== $pkg['main_menu']);
-            $finalPackages[] = [
-                'title' => $pkg['main_menu'],
-                'price' => 'Rp.' . $pkg['price'] . '/Pax',
-                'image' => $pkg['image'],
-                'items' => implode(', ', $itemsList),
-                'qty' => $packageQtyMap[$packageId] ?? 0,
-                'total_price' => $pkg['price'] * (int)$packageQtyMap[$packageId],
-            ];
-        }
 
         // Send to view
         return view('pages/home/cart', [
             'cart' => $cart,
-            'packages' => $finalPackages,
         ]);
     }
 
@@ -383,6 +326,13 @@ class Home extends BaseController
     {
         $session = session();
         $orderModel = $this->ordersModel;
+
+
+        $order_header = $session->get('order_header');
+        $promoBannerModel = new PromoBannerModel();
+        $promoBanner = $promoBannerModel->where('is_active', 1)->findAll();
+
+
         $cart = $session->get('cart');
         if (!$cart) {
             $cart = [];
@@ -394,6 +344,7 @@ class Home extends BaseController
 
         return view('pages/home/complete_order', [
             'order_no' => $order_no,
+            'promo_banner' => $promoBanner,
             // 'order_date' => $order_date,
             // 'order_total' => $order_total,
             // 'order_items' => $order_items,

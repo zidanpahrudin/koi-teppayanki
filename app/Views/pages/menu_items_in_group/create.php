@@ -32,16 +32,6 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="additional_price">Additional Price</label>
-                        <input type="number" class="form-control" id="additional_price" name="additional_price" placeholder="Enter additional price">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="default_item">Default Item</label>
-                        <input type="checkbox" id="default_item" name="default_item" value="1">
-                    </div>
-
-                    <div class="form-group">
                         <button type="submit" class="btn btn-primary">Submit</button>
                     </div>
                 </form>

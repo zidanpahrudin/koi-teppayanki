@@ -15,7 +15,7 @@
                         <label for="menu_id">Menu</label>
                         <select class="form-control" id="menu_id" name="menu_id">
                             <option value="">Select Menu</option>
-                            <?php foreach ($menus as $menu): ?>
+                            <?php foreach ($main_course as $menu): ?>
                                 <option value="<?= $menu['menu_id']; ?>"><?= $menu['menu_name']; ?></option>
                             <?php endforeach; ?>
                         </select>
@@ -66,7 +66,7 @@
                     <div class="form-group">
                         <label for="item_ids">Select Items (Side Dish, Dessert, etc.)</label>
                         <select class="form-control" id="item_ids" name="item_ids[]" multiple="multiple">
-                            <?php foreach ($menu_items_in_group as $item): ?>
+                            <?php foreach ($menus as $item): ?>
                                 <option value="<?= $item['item_id']; ?>"><?= $item['menu_name']; ?> (<?= $item['menu_group_name']; ?>)</option>
                             <?php endforeach; ?>
                         </select>

@@ -22,6 +22,13 @@
                         return meta.row + 1;
                     }
                 },
+                // inject wilayah Name
+                {
+                    "data": "unit_name",
+                    "render": function(data, type, row) {
+                        return 'Jakarta'; // tampilkan nama unit atau 'N/A' jika tidak ada
+                    }
+                },
                 { "data": "item_code" },
                 { "data": "item_name" },
                 { 
@@ -30,8 +37,13 @@
                         return row.unit_name + ' (' + row.unit_code + ')';
                     }
                 },
-                { "data": "created_at" },
-                { "data": "updated_at" }
+                // inject total stock random number
+                {
+                    "data": null,
+                    "render": function(data, type, row) {
+                        return Math.floor(Math.random() * 100) + 1; // tampilkan total stock atau 0 jika tidak ada
+                    }
+                },
             ],
             "dom": 'Bfrtip',
             "buttons": [
@@ -41,7 +53,20 @@
                     text: 'Export CSV',
                     className: 'btn btn-success mb-2'
                 }
-            ]
+            ],
+            "footerCallback": function(row, data, start, end, display) {
+                let api = this.api();
+
+                // Total dari semua row yang terlihat
+                let totalQty = 0;
+                data.forEach(function(rowData) {
+                    let qty = Math.floor(Math.random() * 100) + 1; // HARUSNYA rowData.total
+                    totalQty += qty;
+                });
+
+                // Update footer
+                $(api.column(5).footer()).html(totalQty);
+            }
         });
 
         // Trigger filter
